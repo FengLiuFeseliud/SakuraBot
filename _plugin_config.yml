@@ -1,0 +1,38 @@
+# 通用
+defaults: &defaults
+    # 代理
+    proxy: # clash proxy 127.0.0.1:7890
+    # 转发使用的 qq 号
+    forward_qq: # qq 号
+
+pixiv: 
+    forward_name: "涩图"
+    cookie: # pixiv cookie
+    max_pid_len: 60
+    <<: *defaults
+
+bilibili:
+    monitorLive: &uidList
+        - 233114659
+        - 205889201
+    monitorDynamic:
+        - 233114659
+        - 205889201
+
+twitter:
+    monitor: 
+        - "azurlane_staff"
+    bearerToken:  # twitter bearerToken
+    <<: *defaults
+
+sukebei:
+    forward_name: "磁力链接"
+    maxLen: 5
+    <<: *defaults
+
+saucenao: 
+    <<: *defaults
+
+blhx: 
+    forward_name: "wiki"
+    <<: *defaults

@@ -15,3 +15,4 @@
 /data
 /logs
 /plugin/__pycache__
+/ship_data.json
