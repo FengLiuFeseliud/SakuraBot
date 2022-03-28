@@ -1,0 +1,17 @@
+/cqLog
+/__pycache__
+/dist
+/pycqBot/__pycache__
+/pycqBot.egg-info
+/download
+/cqLogs
+/pycqBot/plugin/__pycache__
+/plugin_config.yml
+/test.py
+/bot_sql.db
+/config.yml
+/go-cqhttp
+/session.token
+/data
+/logs
+/plugin/__pycache__
