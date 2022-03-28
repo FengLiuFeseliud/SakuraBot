@@ -12,13 +12,14 @@ from urllib.parse import unquote
 
 class blhx(Plugin):
     """
-    blhx wiki
+    碧蓝航线 wiki
 
     插件配置
     ---------------------------
 
     forward_qq: 转发使用的 qq 号
     forward_name: 转发使用的名字
+    replyTime: 等待下一页时长 单位秒 默认 60
     """
 
     def __init__(self, bot: cqBot, cqapi: cqHttpApi, plugin_config) -> None:
