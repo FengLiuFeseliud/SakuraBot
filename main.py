@@ -6,12 +6,12 @@ cqapi = cqHttpApi()
 bot = cqapi.create_bot()
 
 bot.plugin_load([
-    # "pycqBot.plugin.test",
-    # "pycqBot.plugin.bilibili",
+    "pycqBot.plugin.test",
+    "pycqBot.plugin.bilibili",
     "pycqBot.plugin.pixiv",
-    # "pycqBot.plugin.twitter",
-    # "pycqBot.plugin.weather",
-    # "pycqBot.plugin.manage",
+    "pycqBot.plugin.twitter",
+    "pycqBot.plugin.weather",
+    "pycqBot.plugin.manage",
     "sukebei",
     "sauceNAO",
     "blhx"
