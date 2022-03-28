@@ -17,4 +17,4 @@ bot.plugin_load([
     "blhx"
 ])
 
-bot.start(start_go_cqhttp=False)
+bot.start()

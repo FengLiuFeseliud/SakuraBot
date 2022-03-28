@@ -2,7 +2,7 @@
 
 基于 go-cqhttp pycqBot
 
-pycqBot: [pycqBot](https://github.com/FengLiuFeseliud/pycqBot)
+pycqBot: [https://github.com/FengLiuFeseliud/pycqBot](https://github.com/FengLiuFeseliud/pycqBot)
 
 ## 使用
 
