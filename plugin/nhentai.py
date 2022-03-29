@@ -16,6 +16,8 @@ class nhentai(Plugin):
     基于 nhentai 的本子搜索
     https://nhentai.net
 
+    使用异步并发下载本子, 比 go-cqhttp 内置下载更快
+
     插件配置
     ---------------------------
 
@@ -26,6 +28,7 @@ class nhentai(Plugin):
     chunk_size: 流下载大小 默认 1024 (1mb)
     proxy: 代理 ip 
     replyTime: 等待选择图时长 单位秒 默认 60
+    notSelectImage: 无图查询 (更快) 默认 False 关
     """
 
     def __init__(self, bot: cqBot, cqapi: cqHttpApi, plugin_config) -> None:
@@ -37,10 +40,31 @@ class nhentai(Plugin):
         self._download_path = plugin_config["download_path"] if "download_path" in plugin_config else "./plugin/nhentai/download"
         self._limit = plugin_config["limit"] if "limit" in plugin_config else 10
         self._chunk_size = plugin_config["chunk_size"] if "chunk_size" in plugin_config else 1024
-
+        self._not_select_image = plugin_config["notSelectImage"] if "notSelectImage" in plugin_config else False
+        
         bot.command(self.select, "本子", {
             "type": "all"
         })
+    
+    def get_language(self, tar_list):
+        """
+        本子语言
+
+        存在 6346 日语
+        存在 29963 中文
+        存在 12227 英语
+        """
+
+        if "6346" in tar_list:
+            return "日语"
+        
+        if "29963" in tar_list:
+            return "中文"
+        
+        if "12227" in tar_list:
+            return "英语"
+        
+        return "未知"
 
     async def get_book(self, q):
         try:
@@ -51,10 +75,12 @@ class nhentai(Plugin):
             book_data_list = []
             div_list = html.xpath('//div[@class="gallery"]')
             for div in div_list:
+                book_language = self.get_language(div.xpath('./@data-tags')[0])
                 book_data_list.append({
                     "title": div.xpath('.//div[@class="caption"]/text()')[0],
                     "img": div.xpath('.//img[@class="lazyload"]/@data-src')[0],
                     "url": "https://nhentai.net%s" % div.xpath('./a/@href')[0],
+                    "language": book_language
                 })
             
             return book_data_list
@@ -91,6 +117,8 @@ class nhentai(Plugin):
             async with aiohttp.ClientSession(connector=conn) as session:
                 tasks = []
                 for page_url in page_url_list:
+                    # 原图 url
+                    page_url = page_url.replace("/t", "/i", 1).replace("t.", ".", 1)
                     tasks.append(asyncio.create_task(self._download_page(session, page_url, book_path)))
                 
                 await asyncio.wait(tasks)
@@ -102,7 +130,8 @@ class nhentai(Plugin):
     
     async def _send_book(self, book_path, message):
         message_list = []
-        for file in os.listdir(book_path):
+        
+        for file in sorted(os.listdir(book_path), key=lambda i:int(i.split(".")[0])):
             file_path = os.path.abspath("%s/%s" % (book_path, file))
             message_list.append(image("file://%s" % file_path))
 
@@ -176,13 +205,23 @@ class nhentai(Plugin):
             message_list = []
             for index, book_data in enumerate(book_data_list):
                 img_name = book_data["img"].rsplit("/", maxsplit=1)[-1]
-                message_list.append("%s.%s" % (index,
-                    "%s\n%s\n%s" % (
-                        book_data["title"],
-                        image(img_name, book_data["img"]),
-                        book_data["url"],
-                    )
-                ))
+                if self._not_select_image:
+                    message_list.append("%s.%s" % (index,
+                        "%s\n语言：%s\n%s" % (
+                            book_data["title"][:35],
+                            book_data["language"],
+                            book_data["url"]
+                        )
+                    ))
+                else:
+                    message_list.append("%s.%s" % (index,
+                        "%s\n语言：%s\n%s\n%s" % (
+                            book_data["title"][:35],
+                            book_data["language"],
+                            image(img_name, book_data["img"]),
+                            book_data["url"]
+                        )
+                    ))
             
             self.cqapi.send_group_forward_msg(message.group_id, node_list(message_list, 
                 self._forward_name,
@@ -198,7 +237,7 @@ class nhentai(Plugin):
                 
                 book_index = int(message_data.text)
                 
-                message.reply('发送 "在线" 在线查看本子 发送 "下载" 下载群文件本子')
+                message.reply('发送 "在线" 在线查看本子')
                 message_data = self.cqapi.reply(message.user_id, self._reply_time)
                 if message_data is None:
                     message.reply("等待 %s 选择本子查看模式超时..." % message.sender["nickname"])
