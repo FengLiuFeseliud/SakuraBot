@@ -36,3 +36,7 @@ saucenao:
 blhx: 
     forward_name: "wiki"
     <<: *defaults
+
+nhentai:
+    forward_name: "book"
+    <<: *defaults

@@ -75,6 +75,11 @@ blhx:
     # 转发使用的名字
     forward_name: "wiki"
     <<: *defaults
+
+# plugin/nhentai
+nhentai:
+    forward_name: "book"
+    <<: *defaults
 ```
 
 ## 插件
