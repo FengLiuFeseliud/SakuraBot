@@ -85,6 +85,8 @@ sauceNAO: 基于 sauceNAO 的 pid 搜索
 
 sukebei: 基于 sukebei 的磁力链接搜索
 
+nhentai: 基于 nhentai 的本子搜索 群内观看 / 群内下载
+
 ## 使用的 pycqBot 内置 插件
 
 pycqBot.plugin.test: 测试插件
@@ -136,6 +138,10 @@ twitter 监听推文
 > **`#舰船筛选 [类型] ...`** 全舰船筛选 多个选项空格隔开
 >
 > **`#舰船 [舰船]`** 舰船查询
+>
+> ### nhentai
+>
+> **`#本子 [标签]`** 本子查询
 >
 > ### pycqBot.plugin.manage
 >
