@@ -14,7 +14,8 @@ bot.plugin_load([
     "pycqBot.plugin.manage",
     "sukebei",
     "sauceNAO",
-    "blhx"
+    "blhx",
+    "nhentai"
 ])
 
-bot.start()
+bot.start(start_go_cqhttp=False)

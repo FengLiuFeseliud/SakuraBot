@@ -4,6 +4,7 @@ from lxml import etree
 from pycqBot.cqApi import cqBot, cqHttpApi
 from pycqBot.object import Plugin, Message
 from pycqBot.cqCode import node_list
+from threading import Thread
 
 
 class sukebei(Plugin):
@@ -23,7 +24,6 @@ class sukebei(Plugin):
 
     def __init__(self, bot: cqBot, cqapi: cqHttpApi, plugin_config):
         super().__init__(bot, cqapi, plugin_config)
-        self.__magnet_list = {}
         self._max_len = plugin_config["maxLen"] if "maxLen" in plugin_config else 10
         self._max_reply_count = plugin_config["maxReplyCount"] if "maxReplyCount" in plugin_config else 3
         self._reply_time = plugin_config["replyTime"] if "replyTime" in plugin_config else 60
@@ -64,6 +64,7 @@ class sukebei(Plugin):
 
     async def _magnet(self, q, message: Message):
         magnet_list = await self.get_magnet(q)
+        logging.info("sukebei 搜索完成 %s count" % len(magnet_list))
         if magnet_list is None:
             self.__magnet_list[message.user_id] = None
             return
@@ -71,7 +72,7 @@ class sukebei(Plugin):
         message_list = ["等待 %s 选择磁力链接，发送序号查看" % message.sender["nickname"]]
         for index, magnet in enumerate(magnet_list):
             message_list.append("%s.%s 做种数：%s " % (index, 
-                    magnet["title"][:40], 
+                    magnet["title"][:30], 
                     magnet["seeding"], 
                 )
             )
@@ -81,37 +82,32 @@ class sukebei(Plugin):
             self._forward_qq
         ))
 
-        self.__magnet_list[message.user_id] = magnet_list
+        def send_magnet(magnet_list, message):
+            reply_count = 0
+            while reply_count < self._max_reply_count:
+                reply_count += 1
+                
+                message_data = self.cqapi.reply(message.user_id, self._reply_time)
+                if message_data is None:
+                    message.reply("等待 %s 选择磁力链接超时..." % message.sender["nickname"])
+                    return
+
+                magnet_index = int(message_data.text)
+                if magnet_index > len(magnet_list) or magnet_index < 0:
+                    if reply_count == self._max_reply_count:
+                        message.reply("错误次数过多，中止输入")
+                        return
+
+                    message.reply("错误的序号 %s，请重新输入" % magnet_index)
+                    continue
+                
+                break
+
+            message.reply(magnet_list[magnet_index]["magnet"])
+
+        thread = Thread(target=send_magnet, args=(magnet_list, message,))
+        thread.setDaemon(True)
+        thread.start()
 
     def magnet(self, commandData, message: Message):
         self.cqapi.add_task(self._magnet(commandData[0], message))
-
-        while message.user_id not in self.__magnet_list:
-            time.sleep(1)
-
-        if self.__magnet_list[message.user_id] is None:
-            self.__magnet_list.pop(message.user_id)
-            return
-
-        reply_count = 0
-        while reply_count < self._max_reply_count:
-            reply_count += 1
-            
-            message_data = self.cqapi.reply(message.user_id, self._reply_time)
-            if message_data is None:
-                message.reply("等待 %s 选择磁力链接超时..." % message.sender["nickname"])
-                return
-
-            magnet_index = int(message_data.text)
-            if magnet_index > len(self.__magnet_list[message.user_id]) or magnet_index < 0:
-                if reply_count == self._max_reply_count:
-                    message.reply("错误次数过多，中止输入")
-                    return
-
-                message.reply("错误的序号 %s，请重新输入" % magnet_index)
-                continue
-            
-            break
-
-        message.reply(self.__magnet_list[message.user_id][magnet_index]["magnet"])
-        self.__magnet_list.pop(message.user_id)

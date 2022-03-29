@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import time
 from threading import Thread
 from pycqBot.cqApi import cqBot, cqHttpApi
 from pycqBot.object import Plugin, Message
@@ -68,6 +67,7 @@ class blhx(Plugin):
 
             self._ship_data_list = ship_data_list
         except Exception as err:
+            logging.error("blhx 获取舰船 error: %s" % err)
             logging.exception(err)
     
     def set_ship_message(self, ship_data):
@@ -100,6 +100,7 @@ class blhx(Plugin):
                 if p_in == len(commandData):
                     message_list.append(self.set_ship_message(ship_data))
 
+            logging.info("舰船筛选 %s 结果 count %s" % (commandData, len(message_list)))
             if message_list == []:
                 message.reply("舰船筛选无结果...")
                 return 
@@ -136,6 +137,9 @@ class blhx(Plugin):
             message.reply("数据超出合并转发最大值输入 '下一页' 查看剩余")
 
         except Exception as err:
+            message.reply("发生错误！%s" % err)
+
+            logging.error("blhx 舰船筛选 error: %s" % err)
             logging.exception(err)
 
     async def _ship(self, commandData, message: Message):
@@ -154,9 +158,11 @@ class blhx(Plugin):
             message.reply(self.set_ship_message(ship_data))
             
         except Exception as err:
+            message.reply("发生错误！%s" % err)
+
+            logging.error("blhx 舰船 error: %s" % err)
             logging.exception(err)
             
-
     def ship(self, commandData, message: Message):
         self.cqapi.add_task(self._ship(commandData, message))
     
