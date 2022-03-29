@@ -329,27 +329,33 @@ class blhx(Plugin):
             logging.exception(err)
     
     async def _equipment_select(self, commandData, message: Message):
-        equipment_data_list = await self.get_equipment_data(commandData[0])
+        try:
+            equipment_data_list = await self.get_equipment_data(commandData[0])
 
-        message_list = []
-        for equipment_data in equipment_data_list:
-            if not await self.wiki_select(commandData[1:], equipment_data):
-                continue
-
-            for equipment_message in self.set_equipment_message(equipment_data, commandData[0]):
-                if type(equipment_message) is not tuple:
-                    message_list.append(equipment_message)
+            message_list = []
+            for equipment_data in equipment_data_list:
+                if not await self.wiki_select(commandData[1:], equipment_data):
                     continue
-                
-                for equipment_s_message in equipment_message:
-                    message_list.append(equipment_s_message)
 
-        logging.info("装备筛选 %s 结果 count %s" % (commandData, len(message_list)))
-        if message_list == []:
-            message.reply("装备筛选无结果...")
-            return 
+                for equipment_message in self.set_equipment_message(equipment_data, commandData[0]):
+                    if type(equipment_message) is not tuple:
+                        message_list.append(equipment_message)
+                        continue
+                    
+                    for equipment_s_message in equipment_message:
+                        message_list.append(equipment_s_message)
 
-        self.send_page(message, message_list)
+            logging.info("装备筛选 %s 结果 count %s" % (commandData, len(message_list)))
+            if message_list == []:
+                message.reply("装备筛选无结果...")
+                return 
+
+            self.send_page(message, message_list)
+        except Exception as err:
+            message.reply("发生错误！%s" % err)
+
+            logging.error("blhx 装备筛选 error: %s" % err)
+            logging.exception(err)
 
     async def _equipment_select_one(self, commandData, message: Message):
         equipment_name = commandData[1]
@@ -364,24 +370,36 @@ class blhx(Plugin):
         return equipment_data
 
     async def _equipment_fall(self, commandData, message: Message):
-        equipment_data = await self._equipment_select_one(commandData, message)
-        fall_data = equipment_data["data"][-1]
-        self.cqapi.send_group_forward_msg(message.group_id, node_list(fall_data.split("\n"), 
-            self._forward_name,
-            self._forward_qq
-        ))
+        try:
+            equipment_data = await self._equipment_select_one(commandData, message)
+            fall_data = equipment_data["data"][-1]
+            self.cqapi.send_group_forward_msg(message.group_id, node_list(fall_data.split("\n"), 
+                self._forward_name,
+                self._forward_qq
+            ))
+        except Exception as err:
+            message.reply("发生错误！%s" % err)
+
+            logging.error("blhx 装备掉落 error: %s" % err)
+            logging.exception(err)
 
     async def _equipment(self, commandData, message: Message):
-        equipment_data = await self._equipment_select_one(commandData, message)
-        
-        for equipment_message in self.set_equipment_message(equipment_data, commandData[0]):
-            if type(equipment_message) is not tuple:
-                message.reply(equipment_message)
-                continue
+        try:
+            equipment_data = await self._equipment_select_one(commandData, message)
             
-            for equipment_s_message in equipment_message:
-                message.reply(equipment_s_message)
-            
+            for equipment_message in self.set_equipment_message(equipment_data, commandData[0]):
+                if type(equipment_message) is not tuple:
+                    message.reply(equipment_message)
+                    continue
+                
+                for equipment_s_message in equipment_message:
+                    message.reply(equipment_s_message)
+        except Exception as err:
+            message.reply("发生错误！%s" % err)
+
+            logging.error("blhx 装备 error: %s" % err)
+            logging.exception(err)
+
     def ship_select(self, commandData, message: Message):
         self.cqapi.add_task(self._ship_select(commandData, message))
     
