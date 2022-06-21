@@ -8,6 +8,7 @@ from pycqBot.cqCode import node_list, image
 import aiohttp
 import aiofiles
 import asyncio
+import cloudscraper
 from zipfile import ZipFile
 
 
@@ -33,6 +34,8 @@ class nhentai(Plugin):
 
     def __init__(self, bot: cqBot, cqapi: cqHttpApi, plugin_config) -> None:
         super().__init__(bot, cqapi, plugin_config)
+        # 绕过cloudflare反bot
+        cloudscraper.create_scraper(disableCloudflareV1=True).get("https://nhentai.net/")
         self._proxy = ("http://%s" % plugin_config["proxy"]) if "proxy" in plugin_config else None
         self._reply_time = plugin_config["replyTime"] if "replyTime" in plugin_config else 60
         self._forward_name = plugin_config["forward_name"]
@@ -43,6 +46,10 @@ class nhentai(Plugin):
         self._not_select_image = plugin_config["notSelectImage"] if "notSelectImage" in plugin_config else False
         
         bot.command(self.select, "本子", {
+            "type": "all"
+        })
+
+        bot.command(self.select_id, "nh", {
             "type": "all"
         })
     
@@ -108,8 +115,17 @@ class nhentai(Plugin):
         except Exception as err:
             logging.warning("nhentai %s 下载 error: %s" % (page_url, err))
 
-    async def download_book(self, page_url_list, book_id):
+    async def download_book(self, book_url):
         try:
+            book_id = book_url.rstrip("/").rsplit("/", maxsplit=1)[-1]
+            book_path = "%s/%s" % (self._download_path, book_id)
+            if os.path.isdir(book_path):
+                return True
+
+            page_url_list = await self.get_book_page(book_url)
+            if page_url_list == []:
+                return None
+
             book_path = os.path.join(self._download_path, "%s" % book_id)
 
             os.makedirs(book_path)
@@ -123,6 +139,7 @@ class nhentai(Plugin):
                 
                 await asyncio.wait(tasks)
             
+            logging.debug("nhentai %s all page %s" % (book_id, len(page_url_list)))
             return book_path
         except Exception as err:
             logging.error("nhentai %s 下载 error: %s" % (page_url, err))
@@ -143,19 +160,8 @@ class nhentai(Plugin):
 
     async def send_book(self, message: Message, book_data_list, book_index):
         book_data = book_data_list[book_index]
-        book_id = book_data["url"].rstrip("/").rsplit("/", maxsplit=1)[-1]
-        book_path = "%s/%s" % (self._download_path, book_id)
-        if os.path.isdir(book_path):
-            logging.info("nhentai %s 已经存在直接发送" % book_data["title"])
-            return await self._send_book(book_path, message)
-
-        page_url_list = await self.get_book_page(book_data["url"])
-        if page_url_list == []:
-            return
-
-        book_path = await self.download_book(page_url_list, book_id)
+        book_path = await self.download_book(book_data["url"])
         logging.info("nhentai %s 下载完成" % book_data["title"])
-        logging.debug("nhentai %s all page %s" % (book_data["title"], len(page_url_list)))
 
         await self._send_book(book_path, message)
 
@@ -195,11 +201,12 @@ class nhentai(Plugin):
 
     async def _select(self, commandData, message: Message):
         try:
-            book_data_list = await self.get_book(commandData[0])
+            book_name = " ".join(commandData)
+            book_data_list = await self.get_book(book_name)
 
-            logging.debug("nhentai %s 查询到 %s count" % (commandData[0], len(book_data_list)))
+            logging.debug("nhentai %s 查询到 %s count" % (book_name, len(book_data_list)))
             if book_data_list == []:
-                message.reply("没有查询到本子 %s " % commandData[0])
+                message.reply("没有查询到本子 %s " % book_name)
                 return
 
             message_list = []
@@ -262,5 +269,19 @@ class nhentai(Plugin):
             logging.error("nhentai _select error: %s" % err)
             logging.exception(err)
 
+    async def _select_id(self, commandData, message: Message):
+        if len(commandData) <= 0:
+            message.reply("参数不能为空！")
+            return
+        
+        message.reply("等待本子下载")
+        book_path = await self.download_book("https://nhentai.net/g/%s/" % commandData[0])
+        logging.info("nhentai %s 下载完成" % commandData[0])
+
+        await self._send_book(book_path, message)
+
     def select(self, commandData, message: Message):
         self.cqapi.add_task(self._select(commandData, message))
+
+    def select_id(self, commandData, message: Message):
+        self.cqapi.add_task(self._select_id(commandData, message))

@@ -40,3 +40,7 @@ blhx:
 nhentai:
     forward_name: "book"
     <<: *defaults
+
+imhentai:
+    forward_name: "book"
+    <<: *defaults

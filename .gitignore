@@ -1,11 +1,8 @@
 /cqLog
-/__pycache__
 /dist
-/pycqBot/__pycache__
 /pycqBot.egg-info
 /download
 /cqLogs
-/pycqBot/plugin/__pycache__
 /plugin_config.yml
 /test.py
 /bot_sql.db
@@ -14,5 +11,8 @@
 /session.token
 /data
 /logs
+/plugin/nhentai/download
+/plugin/*/__pycache__
 /plugin/__pycache__
-/plugin/nhentai
+/plugin/rssSub/rss_xml
+/plugin/rssSub/rss_sub
