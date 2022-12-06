@@ -36,6 +36,9 @@ class imhentai(Plugin):
 
         page_url_list = []
         page = int(html.xpath('//li[@class="pages"]/text()')[0].strip("Pages: "))
+        if page > 300:
+            return 2
+
         img_data_url = html.xpath('//*[@id="append_thumbs"]/div[1]/div/a/img/@data-src')[0].rsplit("/", maxsplit=1)[0]
         for page_in in range(1, page+1):
             page_url_list.append("%s/%s.jpg" % (img_data_url, page_in))
@@ -61,8 +64,9 @@ class imhentai(Plugin):
                 return book_path
 
             page_url_list = await self.get_book(book_url)
-            if page_url_list == []:
-                return None
+            
+            if page_url_list == [] or type(page_url_list) == int:
+                return page_url_list
 
             book_path = os.path.join(self._download_path, "%s" % book_id)
 
@@ -109,7 +113,6 @@ class imhentai(Plugin):
                 
                 forward_message_list.append(message_list)
 
-            print(forward_message_list)
             for message_list in forward_message_list:
                 self.cqapi.send_group_forward_msg(message.group_id, node_list(message_list, 
                     self._forward_name,
@@ -121,6 +124,14 @@ class imhentai(Plugin):
     async def send_book(self, message: Message, book_data_list, book_index):
         book_data = book_data_list[book_index]
         book_path = await self.download_book(book_data["url"])
+        if book_path == []:
+            message.reply("获取本子失败页为空")
+            return
+        
+        if type(book_path) == int:
+            message.reply("本子页过多可以查看原url: %s" % book_data["url"])
+            return
+
         logging.info("nhentai %s 下载完成" % book_data["title"])
         await self._send_book(book_path, message)
 
@@ -128,7 +139,7 @@ class imhentai(Plugin):
         message_list = ['使用 "#本子 [搜索内容] [页数]" 翻页, 发送序号查看']
         for index, book_data in enumerate(select_list):
             if len(book_data["title"]) > 30:
-                message_list.append("%s. %s" % (index, book_data["title"][0:30]))
+                message_list.append("%s. %s" % (index, book_data["title"]))
             else:
                 message_list.append("%s. %s" % (index, book_data["title"]))
 
@@ -148,7 +159,10 @@ class imhentai(Plugin):
         html = await self.cqapi.link(api, json=False, proxy=self._proxy)
         html = etree.HTML(html)
 
-        page = int(html.xpath('//ul[@class="pagination"]/li')[-2].xpath("./a/text()")[0])
+        try:
+            page = int(html.xpath('//ul[@class="pagination"]/li')[-2].xpath("./a/text()")[0])
+        except IndexError:
+            page = 1
         select_list, book_data_list = html.xpath('//div[@class="thumb"]'), []
         for book_data in select_list:
             book_data_list.append({
@@ -160,7 +174,12 @@ class imhentai(Plugin):
         return page, book_data_list
     
     async def _select(self, commandData, message: Message):
-        if len(commandData) == 2:
+        if len(commandData) >= 2:
+            try:
+                page = int(commandData[1])
+            except Exception:
+                message.reply("参数错误最后一个参数应为数字")
+                return
             page, book_data_list = await self.select_book(commandData[0], commandData[1])
         else:
             page, book_data_list = await self.select_book(commandData[0])
@@ -174,7 +193,12 @@ class imhentai(Plugin):
                 message.reply("等待 %s 选择本子超时..." % message.sender["nickname"])
                 return
             
-            book_index = int(message_data.text)
+            try:
+                book_index = int(message_data.text)
+            except Exception:
+                message.reply("参数错误页数应为数字")
+                return
+
             self.cqapi.add_task(self.send_book(message, book_data_list, book_index))
 
         thread = Thread(target=send_book, args=(book_data_list, message,))

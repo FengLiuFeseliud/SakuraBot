@@ -35,7 +35,7 @@ class nhentai(Plugin):
     def __init__(self, bot: cqBot, cqapi: cqHttpApi, plugin_config) -> None:
         super().__init__(bot, cqapi, plugin_config)
         # 绕过cloudflare反bot
-        cloudscraper.create_scraper(disableCloudflareV1=True).get("https://nhentai.net/")
+        cloudscraper.create_scraper(disableCloudflareV1=True).get("https://nhentai.to/")
         self._proxy = ("http://%s" % plugin_config["proxy"]) if "proxy" in plugin_config else None
         self._reply_time = plugin_config["replyTime"] if "replyTime" in plugin_config else 60
         self._forward_name = plugin_config["forward_name"]
@@ -75,7 +75,7 @@ class nhentai(Plugin):
 
     async def get_book(self, q):
         try:
-            api = "https://nhentai.net/search/?q=%s" % q
+            api = "https://nhentai.to/search/?q=%s" % q
             html = await self.cqapi.link(api, json=False, proxy=self._proxy)
             html = etree.HTML(html)
 
@@ -86,7 +86,7 @@ class nhentai(Plugin):
                 book_data_list.append({
                     "title": div.xpath('.//div[@class="caption"]/text()')[0],
                     "img": div.xpath('.//img[@class="lazyload"]/@data-src')[0],
-                    "url": "https://nhentai.net%s" % div.xpath('./a/@href')[0],
+                    "url": "https://nhentai.to%s" % div.xpath('./a/@href')[0],
                     "language": book_language
                 })
             
@@ -275,7 +275,7 @@ class nhentai(Plugin):
             return
         
         message.reply("等待本子下载")
-        book_path = await self.download_book("https://nhentai.net/g/%s/" % commandData[0])
+        book_path = await self.download_book("https://nhentai.to/g/%s/" % commandData[0])
         logging.info("nhentai %s 下载完成" % commandData[0])
 
         await self._send_book(book_path, message)

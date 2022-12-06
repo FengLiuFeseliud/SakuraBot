@@ -72,7 +72,7 @@ class sukebei(Plugin):
         message_list = ["等待 %s 选择磁力链接，发送序号查看" % message.sender["nickname"]]
         for index, magnet in enumerate(magnet_list):
             message_list.append("%s.%s 做种数：%s " % (index, 
-                    magnet["title"][:30], 
+                    magnet["title"], 
                     magnet["seeding"], 
                 )
             )

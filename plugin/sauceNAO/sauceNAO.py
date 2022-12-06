@@ -21,10 +21,14 @@ class sauceNAO(Plugin):
 
     def __init__(self, bot: cqBot, cqapi: cqHttpApi, plugin_config) -> None:
         super().__init__(bot, cqapi, plugin_config)
+        print(plugin_config)
         self._forward_name = plugin_config["forward_name"]
         self._forward_qq = plugin_config["forward_qq"]
-        self._proxy = ("http://%s" % plugin_config["proxy"]) if "proxy" in plugin_config else None
         self._reply_time = plugin_config["replyTime"] if "replyTime" in plugin_config else 60
+
+        self._headers = {
+            "Cookie": plugin_config["cookie"]
+        }
 
         bot.command(self.select, "原图", {
             "type": "all",
@@ -88,7 +92,7 @@ class sauceNAO(Plugin):
                     data = await req.read()
                 
                 logging.debug("sauceNAO %s 图片流上传 saucenao API" % code["data"]["url"])
-                async with session.post("https://saucenao.com/search.php", data={"file": data}, proxy=self._proxy) as req:
+                async with session.post("https://saucenao.com/search.php", data={"file": data}, headers=self._headers) as req:
                     return await req.text()
 
         except Exception as err:

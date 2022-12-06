@@ -103,7 +103,7 @@ class blhx(Plugin):
                 equipment_data_list.append({
                     "name": data[0],
                     "type": tr.xpath('./@data-param1')[0],
-                    "camp": tr.xpath('./@data-param3')[0],
+                    "camp": ",".join(tr.xpath('./@data-param3')),
                     "rarity": tr.xpath('./@data-param2')[0],
                     "img": tr.xpath('.//*[@class="xtb-image"]//img/@src')[0],
                     "data": data[1:],
@@ -180,13 +180,10 @@ class blhx(Plugin):
                 equipment_data["data"][7],
                 equipment_data["data"][8],
                 equipment_data["data"][9]
-            ), "索敌范围：%s索敌角度：%s弹药射程：%s散布角度：%s伤害范围：%s散布范围：%s" % (
+            ), "索敌范围：%s索敌角度：%s弹药射程：%s" % (
                 equipment_data["data"][10],
                 equipment_data["data"][11],
-                equipment_data["data"][12],
-                equipment_data["data"][13],
-                equipment_data["data"][14],
-                equipment_data["data"][15]
+                equipment_data["data"][12]
             )
 
         if equipment_big_type in ["舰载机", "轰炸机", "战斗机", "鱼雷机", "水上机"]:
