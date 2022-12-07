@@ -16,3 +16,6 @@
 /plugin/__pycache__
 /plugin/rssSub/rss_xml
 /plugin/rssSub/rss_sub
+/plugin/traindata/train
+/go-cqhttp.exe
+/device.json

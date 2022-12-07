@@ -68,6 +68,10 @@ class sauceNAO(Plugin):
             if result_type == "pixiv ID":
                 data["id"] = content[1]
                 data["member"] = content[3]
+
+            if result_type == "ArtStation Project":
+                data["id"] = content[1]
+                data["member"] = content[3]
             
             if result_type == "Source":
                 data["source"] = content[1]
@@ -76,7 +80,9 @@ class sauceNAO(Plugin):
             if result_type == "Creator(s)":
                 data["creator"] = content[1:]
 
-            if result_type not in ["pixiv ID", "Source", "Creator(s)"]:
+            if result_type not in ["pixiv ID", "Source", "Creator(s)", "ArtStation Project"]:
+                data["result_type_old"] = result_type
+                data["content"] = content
                 data["result_type"] = "All"
                 data["source_url"] = result.xpath('.//div[@class="resultmiscinfo"]//a/@href')
 
@@ -129,35 +135,40 @@ class sauceNAO(Plugin):
         logging.info("sauceNAO 搜索完成 %s %s %s" % (data["result_type"], data["title"], data["result_img_url"]))
 
         message_list = []
+        message_list.append("相似度: %s" % data["similarity"])
+
         if data["result_type"] == "pixiv ID":
-            message_list.append("相似度: %s" % data["similarity"])
             message_list.append("pid: %s\n画师: %s" % (
                 data["id"], data["member"]
             ))
             message_list.append("https://www.pixiv.net/artworks/%s" % data["id"])
         
+        if data["result_type"] == "ArtStation Project":
+            message_list.append("id: %s\n画师: %s" % (
+                data["id"], data["member"]
+            ))
+            message_list.append("https://www.artstation.com/artwork/%s" % data["id"])
+
         if data["result_type"] == "Source":
-            message_list.append("相似度: %s" % data["similarity"])
             message_list.append("来源: %s" % data["source"])
             message_list.append("原图地址（部分网站有墙可以找没有墙的网站）:")
             for source_url in data["source_url"]:
                 message_list.append(source_url)
         
         if data["result_type"] == "Creator(s)":
-            message_list.append("相似度: %s" % data["similarity"])
             message_list.append("来源:")
             for creator in data["creator"]:
                 message_list.append(creator)
         
         if data["result_type"] == "All":
-            message_list.append("相似度: %s" % data["similarity"])
+            message_list.append("类型: %s" % data["result_type_old"])
+            message_list.append(" ".join(data["content"]))
             for source_url in data["source_url"]:
                 message_list.append(source_url)
+            message_list.append("这个为通用类型结果, 可以将该图发给我, 以添加支持该类型的信息")
 
-        if message_list == []:
-            message.reply("未知结果请将该图发给我, 以添加支持")
-            return
-
+        message_list.append("结果缩略图:")
+        message_list.append(image("sauceNAO_result_img", data["result_img_url"]))
         self.cqapi.send_group_forward_msg(message.group_id, node_list(message_list, 
             self._forward_name,
             self._forward_qq

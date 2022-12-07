@@ -1,15 +1,20 @@
 from pycqBot.cqApi import cqHttpApi, cqLog
-from asyncio import set_event_loop_policy
-from uvloop import EventLoopPolicy
 from logging import INFO
 
+# win
+import asyncio
+asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+# linux
+# import asyncio, uvloop
+# asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+
 cqLog(INFO)
-set_event_loop_policy(EventLoopPolicy())
 
 cqapi = cqHttpApi()
 bot = cqapi.create_bot(group_id_list=[
 
-    ]
+    ],
 )
 
 bot.plugin_load([
@@ -25,7 +30,8 @@ bot.plugin_load([
     # "blhx",
     # "imhentai",
     # "nhentai",
-    # "test"
+    # "test",
+    # "traindata"
 ])
 
-bot.start(start_go_cqhttp=False)
+bot.start()
