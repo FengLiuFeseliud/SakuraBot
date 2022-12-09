@@ -21,7 +21,6 @@ class sauceNAO(Plugin):
 
     def __init__(self, bot: cqBot, cqapi: cqHttpApi, plugin_config) -> None:
         super().__init__(bot, cqapi, plugin_config)
-        print(plugin_config)
         self._forward_name = plugin_config["forward_name"]
         self._forward_qq = plugin_config["forward_qq"]
         self._reply_time = plugin_config["replyTime"] if "replyTime" in plugin_config else 60
@@ -136,6 +135,7 @@ class sauceNAO(Plugin):
 
         message_list = []
         message_list.append("相似度: %s" % data["similarity"])
+        message_list.append(data["title"])
 
         if data["result_type"] == "pixiv ID":
             message_list.append("pid: %s\n画师: %s" % (

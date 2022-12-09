@@ -8,6 +8,12 @@ from pycqBot.cqCode import image, node_list
 from lxml import etree
 from urllib.parse import unquote
 
+import time
+
+from selenium import webdriver
+from selenium.webdriver.common import by
+from selenium.common.exceptions import NoSuchElementException
+
 
 class blhx(Plugin):
     """
@@ -26,6 +32,7 @@ class blhx(Plugin):
         self._forward_name = plugin_config["forward_name"]
         self._forward_qq = plugin_config["forward_qq"]
         self._reply_time = plugin_config["replyTime"] if "replyTime" in plugin_config else 60
+        self.__cookie = plugin_config["cookie"] if "cookie" in plugin_config else ""
 
         bot.command(self.ship_select, "舰船筛选", {
             "type": "all"
@@ -46,6 +53,51 @@ class blhx(Plugin):
         bot.command(self.equipment, "装备", {
             "type": "all"
         })
+
+        bot.command(self.calendar, "碧蓝日历", {
+            "type": "all"
+        })
+
+        bot.command(self.screenshot_wiki, "碧蓝", {
+            "type": "all"
+        })
+
+        bot.command(self.ui_png, "碧蓝过场图", {
+            "type": "all"
+        })
+
+    def set_cookie(self, driver):
+        for data in self.__cookie.split("; "):
+            name, value = data.split("=", 1)
+            driver.add_cookie({
+                "name": name, "value": value, "domain": ".biligame.com", 'path' : '/', 'secure':True, "httpOnly": False
+            })
+
+    def screenshot(self, url, file_path, path=None):
+        options = webdriver.ChromeOptions()
+        options.add_argument('--headless')
+
+        driver = webdriver.Chrome(options=options)
+        driver.maximize_window()
+
+        driver.get(url)
+        self.set_cookie(driver)
+        driver.get(url)
+        time.sleep(1)
+
+        width = driver.execute_script("return document.body.scrollWidth")
+        height = driver.execute_script("return document.body.scrollHeight")
+
+        driver.set_window_size(width, height)
+        if path is None:
+            print("页面长度 %sx%s " % (width, height))
+            driver.save_screenshot(file_path)
+
+        else:
+            driver.find_element(by.By.XPATH, path).screenshot(file_path)
+
+        driver.quit()
+        return "file://%s" % os.path.abspath(file_path)
     
     async def get_ship_data(self):
         try:
@@ -396,6 +448,65 @@ class blhx(Plugin):
 
             logging.error("blhx 装备 error: %s" % err)
             logging.exception(err)
+
+    async def _ui_png(self, commandData, message: Message):
+        try:
+            html = await self.cqapi.link("https://wiki.biligame.com/blhx/%E5%BD%B1%E7%94%BB%E7%9B%B8%E5%85%B3", json=False)
+            html = etree.HTML(html)
+
+            message_list = ["数据来源 https://wiki.biligame.com/blhx/%E5%BD%B1%E7%94%BB%E7%9B%B8%E5%85%B3", "当前登录图:"]
+            message_list.append(image(html.xpath('//*[@id="mw-content-text"]/div/center/div/div/a/img/@src')[0]))
+            message_list.append("当前过场图:")
+
+            for img_url in html.xpath('//*[@id="mw-content-text"]/div/center/ul//img//@src'):
+                message_list.append(image(img_url.rsplit("/", 1)[0].replace("/thumb", "")))
+
+            self.cqapi.send_group_forward_msg(message.group_id, node_list(message_list, 
+                self._forward_name,
+                self._forward_qq
+            ))
+        except NoSuchElementException as err:
+            logging.error("blhx: 过场图获取失败... %s" % err)
+            message.reply("过场图获取失败...")
+        
+
+    def calendar(self, commandData, message: Message):
+        try:
+            message.reply_not_code(
+                image("calendar.png", self.screenshot(
+                        "https://wiki.biligame.com/blhx/%E9%A6%96%E9%A1%B5", 
+                        "./screenshot/calendar.png",
+                        '//*[@id="mw-content-text"]/div/div[3]/div[3]'
+                    )
+                )
+            )
+        except NoSuchElementException as err:
+            logging.error("blhx: 日历获取失败... %s" % err)
+            message.reply("日历获取失败...")
+    
+    def screenshot_wiki(self, commandData, message: Message):
+        try:
+            file_name = "blhx_%s.png" % commandData[0]
+            file_path = "./screenshot/%s" % file_name
+
+            if os.path.exists(file_path):
+                message.reply_not_code(image(file_name, "file://%s" % os.path.abspath(file_path)))
+                return
+                
+            message.reply_not_code(
+                image(file_name, self.screenshot(
+                        "https://wiki.biligame.com/blhx/%s" % commandData[0], 
+                        file_path,
+                        '//*[@id="bodyContent"]'
+                    )
+                )
+            )
+        except NoSuchElementException as err:
+            logging.error("blhx: wiki %s 获取失败... %s" % (commandData[0], err))
+            message.reply("wiki %s 获取失败..." % commandData[0])
+    
+    def ui_png(self, commandData, message: Message):
+        self.cqapi.add_task(self._ui_png(commandData, message))
 
     def ship_select(self, commandData, message: Message):
         self.cqapi.add_task(self._ship_select(commandData, message))

@@ -64,7 +64,8 @@ class traindata(Plugin):
         for str in message.code_str:
             text = text.replace(str, "", 1)
 
-        if text == "":
+        text = text.strip()
+        if text == "" or "#" in text:
             return
             
         if message.group_id not in self.__old_time:
